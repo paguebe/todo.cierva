@@ -1,32 +1,35 @@
+<?php
+require "DB.php";
+require "todo.php";
+
+try {
+    $db = new DB;
+    $todo_list = Todo::DB_selectAll($db->connection);
+} catch (PDOException $e) {
+    print "Error!: " . $e->getMessage() . "<br/>";
+    die();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo List actualizble mediante botón</title>
+    <title>Todo List actualizable mediante botón</title>
 </head>
 <body>
     <label for="content">Nueva tarea</label>
     <input type="text" id="content" placeholder="Ingresa una tarea"><br>
     <button id="guardar">Guardar</button>
-    <?php
-        require "DB.php";
-        require "todo.php";
-        try {
-                $db = new DB;
-                echo "<h2 id=\"lista\">TODO</h2>";
-                echo "<ul>";
-                $todo_list = Todo::DB_selectAll($db->connection);
-                foreach ($todo_list as $row) {
-                    echo "<li>". $row->getItem_id() .". ". $row->getContent() . "</li>";
-                }
-                echo "</ul>";
-            } 
-        catch (PDOException $e) {
-                print "Error!: " . $e->getMessage() . "<br/>";
-                die();
-            }
-    ?>
+
+    <h2 id="lista">TODO</h2>
+    <ul id="todo-list">
+        <?php foreach ($todo_list as $row): ?>
+            <li id="item-<?= $row->getItem_id() ?>"><?= $row->getItem_id() . ". " . $row->getContent() ?></li>
+        <?php endforeach; ?>
+    </ul>
+
     <script>
         document.getElementById('guardar').addEventListener('click', function () {
             const content = document.getElementById('content').value;
@@ -36,13 +39,12 @@
                 return;
             }
 
-            const url = 'http://todo.cierva/controller.php';  
-            
+            const url = 'http://desarrollo.cierva.asir11.lan/controller.php';
+
             const postData = {
                 content: content
             };
 
-            // Llamada POST
             fetch(url, {
                 method: 'POST',
                 headers: {
@@ -50,22 +52,21 @@
                 },
                 body: JSON.stringify(postData)
             })
-            .then(response => response.json())  // Convertir la respuesta a JSON
+            .then(response => response.json())
             .then(data => {
-                // Limpiar la tabla antes de agregar los nuevos datos
-                const lista = document.getElementById('lista');
-                lista.innerHTML = ''; // Eliminar el contenido previo de la tabla
+                // Limpiar el campo de entrada
+                document.getElementById('content').value = '';
 
-                // La respuesta es un array de objetos JSON
-                data.forEach(item => {
-                    var li = document.createElement("li");
-                    li.appendChild(document.createTextNode(item.item_id+". "+item.content));
-                    ul.appendChild(li);
-                });
+                // Crear un nuevo elemento de lista
+                const newItem = document.createElement("li");
+                newItem.id = `item-${data.item_id}`; // Asignar un ID basado en el nuevo item_id
+                newItem.textContent = `${data.item_id}. ${data.content}`;
+
+                // Añadir el nuevo elemento a la lista
+                document.getElementById('todo-list').appendChild(newItem);
             })
             .catch(error => console.error('Error en la solicitud POST:', error));
         });
     </script>
-
 </body>
 </html>
